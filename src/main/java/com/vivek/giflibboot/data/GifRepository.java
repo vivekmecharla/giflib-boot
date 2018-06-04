@@ -6,4 +6,5 @@ import org.springframework.stereotype.Component;
 
 @Component
 public interface GifRepository extends CrudRepository<Gif, String> {
+    Gif findById(Long gifId);
 }

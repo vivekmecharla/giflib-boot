@@ -3,6 +3,7 @@ package com.vivek.giflibboot.web.controller;
 import com.vivek.giflibboot.data.CategoryRepository;
 import com.vivek.giflibboot.model.Category;
 import com.vivek.giflibboot.web.Color;
+import com.vivek.giflibboot.web.FlashMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -68,11 +69,12 @@ public class CategoryController {
     @RequestMapping(value = "/categories", method = RequestMethod.POST)
     public String addCategory(@Valid Category category, BindingResult result, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.category", result);
             redirectAttributes.addFlashAttribute("category", category);
             return "redirect:/categories/add";
         }
         categoryRepository.save(category);
-
+        redirectAttributes.addFlashAttribute("flash", new FlashMessage("Category Successfully added!", FlashMessage.Status.SUCCESS));
         return "redirect:/categories";
     }
 

@@ -1,16 +1,27 @@
 package com.vivek.giflibboot.web.controller;
 
+import com.vivek.giflibboot.data.CategoryRepository;
+import com.vivek.giflibboot.data.GifRepository;
 import com.vivek.giflibboot.model.Gif;
+import com.vivek.giflibboot.web.FlashMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 public class GifController {
 
+    @Autowired
+    CategoryRepository categoryRepository;
+    @Autowired
+    GifRepository gifRepository;
     // Home page - index of all GIFs
     @RequestMapping("/")
     public String listGifs(Model model) {
@@ -24,9 +35,7 @@ public class GifController {
     // Single GIF page
     @RequestMapping("/gifs/{gifId}")
     public String gifDetails(@PathVariable Long gifId, Model model) {
-        // TODO: Get gif whose id is gifId
-        Gif gif = null;
-
+        Gif gif = gifRepository.findById(gifId);
         model.addAttribute("gif", gif);
         return "gif/details";
     }
@@ -35,8 +44,7 @@ public class GifController {
     @RequestMapping("/gifs/{gifId}.gif")
     @ResponseBody
     public byte[] gifImage(@PathVariable Long gifId) {
-        // TODO: Return image data as byte array of the GIF whose id is gifId
-        return null;
+        return gifRepository.findById(gifId).getBytes();
     }
 
     // Favorites - index of all GIFs marked favorite
@@ -52,16 +60,24 @@ public class GifController {
 
     // Upload a new GIF
     @RequestMapping(value = "/gifs", method = RequestMethod.POST)
-    public String addGif() {
-        // TODO: Upload new GIF if data is valid
+    public String addGif(Gif gif, @RequestParam MultipartFile file, RedirectAttributes redirectAttributes) {
+        try {
+            gif.setBytes(file.getBytes());
+        } catch (IOException e) {
+            System.err.println("Unable to get byte array from uploaded file");
+        }
+        gifRepository.save(gif);
 
-        // TODO: Redirect browser to new GIF's detail view
-        return null;
+        redirectAttributes.addFlashAttribute("flash",
+                new FlashMessage("Gif successfully uploaded", FlashMessage.Status.SUCCESS));
+        return String.format("redirect:/gifs/%s", gif.getId());
     }
 
     // Form for uploading a new GIF
     @RequestMapping("/upload")
     public String formNewGif(Model model) {
+        model.addAttribute("gif", new Gif());
+        model.addAttribute("categories", categoryRepository.findAll());
         // TODO: Add model attributes needed for new GIF upload form
 
         return "gif/form";
