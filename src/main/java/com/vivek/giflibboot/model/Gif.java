@@ -1,6 +1,8 @@
 package com.vivek.giflibboot.model;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -12,7 +14,10 @@ public class Gif {
 
     @Lob
     private byte[] bytes;
+    @NotNull
+    @Size(min = 3, max = 12)
     private String description;
+    @NotNull
     @ManyToOne
     private Category category;
     private LocalDateTime dateUploaded = LocalDateTime.now();

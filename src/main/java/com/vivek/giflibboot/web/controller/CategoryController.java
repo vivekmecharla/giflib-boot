@@ -1,6 +1,7 @@
 package com.vivek.giflibboot.web.controller;
 
 import com.vivek.giflibboot.data.CategoryRepository;
+import com.vivek.giflibboot.data.GifRepository;
 import com.vivek.giflibboot.model.Category;
 import com.vivek.giflibboot.web.Color;
 import com.vivek.giflibboot.web.FlashMessage;
@@ -21,6 +22,8 @@ public class CategoryController {
 
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private GifRepository gifRepository;
 
     // Index of all categories
     @RequestMapping("/categories")
@@ -45,24 +48,36 @@ public class CategoryController {
             model.addAttribute("category", new Category());
         }
         model.addAttribute("colors", Color.values());
+        model.addAttribute("action", "/categories");
+        model.addAttribute("heading", "New Category");
+        model.addAttribute("submit", "Add");
         return "category/form";
     }
 
     // Form for editing an existing category
     @RequestMapping("categories/{categoryId}/edit")
     public String formEditCategory(@PathVariable Long categoryId, Model model) {
-        // TODO: Add model attributes needed for edit form
-
+        if (!model.containsAttribute("category")) {
+            model.addAttribute("category", categoryRepository.findById(categoryId));
+        }
+        model.addAttribute("colors", Color.values());
+        model.addAttribute("action", String.format("/categories/%s", categoryId));
+        model.addAttribute("heading", "Edit Category");
+        model.addAttribute("submit", "Update");
         return "category/form";
     }
 
     // Update an existing category
     @RequestMapping(value = "/categories/{categoryId}", method = RequestMethod.POST)
-    public String updateCategory() {
-        // TODO: Update category if valid data was received
-
-        // TODO: Redirect browser to /categories
-        return null;
+    public String updateCategory(@Valid Category category, BindingResult result, RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.category", result);
+            redirectAttributes.addFlashAttribute("category", category);
+            return String.format("redirect:/categories/%s/edit", category.getId());
+        }
+        categoryRepository.save(category);
+        redirectAttributes.addFlashAttribute("flash", new FlashMessage("Category Successfully updated!", FlashMessage.Status.SUCCESS));
+        return "redirect:/categories";
     }
 
     // Add a category
@@ -80,10 +95,15 @@ public class CategoryController {
 
     // Delete an existing category
     @RequestMapping(value = "/categories/{categoryId}/delete", method = RequestMethod.POST)
-    public String deleteCategory(@PathVariable Long categoryId) {
-        // TODO: Delete category if it contains no GIFs
-
-        // TODO: Redirect browser to /categories
-        return null;
+    public String deleteCategory(@PathVariable Long categoryId, RedirectAttributes redirectAttributes) {
+        Category category = new Category();
+        category.setId(categoryId);
+        if (gifRepository.findByCategory(category).size() > 0) {
+            redirectAttributes.addFlashAttribute("flash", new FlashMessage("Only empty categories can be deleted!", FlashMessage.Status.FAILURE));
+        } else {
+            categoryRepository.delete(category);
+            redirectAttributes.addFlashAttribute("flash", new FlashMessage("Category deleted Successfully!", FlashMessage.Status.SUCCESS));
+        }
+        return "redirect:/categories";
     }
 }
